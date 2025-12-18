@@ -1,0 +1,462 @@
+import { FormEvent, useEffect, useState } from 'react';
+import { Phone, Mail, Calendar, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { maskPhone, stripPhone } from '@/lib/phone';
+import { Doctor, doctorAPI } from '@/lib/api';
+
+type DoctorForm = {
+  name: string;
+  specialty: string;
+  email: string;
+  phone: string;
+  availability: string;
+  crmUf: string;
+  crmNumber: string;
+};
+
+const emptyForm: DoctorForm = {
+  name: '',
+  specialty: '',
+  email: '',
+  phone: '',
+  availability: '',
+  crmUf: '',
+  crmNumber: '',
+};
+
+export function Doctors() {
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formValues, setFormValues] = useState(emptyForm);
+  const [prefix, setPrefix] = useState<'Dr.' | 'Dra.'>('Dr.');
+  const availabilityDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'] as const;
+  const shiftOptions = ['Manhã', 'Tarde', 'Noite'] as const;
+  type Day = (typeof availabilityDays)[number];
+  type Shift = (typeof shiftOptions)[number];
+  const getDefaultAvailability = (): Partial<Record<Day, string[]>> => ({
+    Seg: ['Manhã', 'Tarde'],
+    Qua: ['Manhã', 'Tarde'],
+    Sex: ['Manhã', 'Tarde'],
+  });
+  const [availabilitySelection, setAvailabilitySelection] = useState<Partial<Record<Day, string[]>>>(getDefaultAvailability);
+  const [crmTouched, setCrmTouched] = useState(false);
+  const [loadingDoctors, setLoadingDoctors] = useState(true);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [expandedDoctorId, setExpandedDoctorId] = useState<string | null>(null);
+
+  const openModal = () => {
+    setCurrentStep(1);
+    setIsModalOpen(true);
+  };
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setFormValues(emptyForm);
+    setPrefix('Dr.');
+    setAvailabilitySelection(getDefaultAvailability());
+    setCrmTouched(false);
+    setFormError(null);
+    setIsSaving(false);
+  };
+
+  const handleChange = (field: keyof typeof formValues, value: string) => {
+    setFormValues((prev) => ({ ...prev, [field]: value }));
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const loadDoctors = async () => {
+      try {
+        const result = await doctorAPI.getAll();
+        if (active) setDoctors(result);
+      } catch (error) {
+        console.error('Erro ao carregar médicos', error);
+        toast.error('Não foi possível carregar os médicos.');
+      } finally {
+        if (active) setLoadingDoctors(false);
+      }
+    };
+
+    loadDoctors();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const crmRegex = /^CRM\/[A-Z]{2}\s\d{4,7}$/;
+  const crmUfValue = formValues.crmUf.trim().toUpperCase();
+  const crmNumberValue = formValues.crmNumber.trim();
+  const crmValue = crmUfValue && crmNumberValue ? `CRM/${crmUfValue} ${crmNumberValue}` : '';
+  const crmValid = crmValue.length > 0 && crmRegex.test(crmValue);
+  const showCrmError = crmTouched && crmNumberValue && !crmValid;
+
+  const formatAvailability = (selection: Partial<Record<Day, string[]>>) => {
+    const entries = availabilityDays
+      .map((day) => {
+        const shifts = selection[day];
+        if (!shifts || shifts.length === 0) {
+          return null;
+        }
+        return `${day} (${shifts.join(', ')})`;
+      })
+      .filter(Boolean);
+    return entries.length > 0 ? entries.join('; ') : 'Seg a Sex';
+  };
+
+  const toggleShift = (day: Day, shift: Shift) => {
+    setAvailabilitySelection((prev) => {
+      const current = prev[day] ?? [];
+      const hasShift = current.includes(shift);
+      const updated = hasShift ? current.filter((value) => value !== shift) : [...current, shift];
+      if (updated.length === 0) {
+        const { [day]: _removed, ...rest } = prev;
+        return rest;
+      }
+      const ordered = shiftOptions.filter((option) => updated.includes(option));
+      return { ...prev, [day]: ordered };
+    });
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    // Intercept Enter on steps 1/2 to advance
+    if (currentStep < 3) {
+      nextStep();
+      return;
+    }
+    const { name, specialty, email, phone } = formValues;
+    if (!name.trim() || !specialty.trim() || !email.trim() || !crmUfValue || !crmNumberValue) {
+      setFormError('Preencha nome, especialidade, email e CRM.');
+      return;
+    }
+
+    if (!crmValid) {
+      setCrmTouched(true);
+      setFormError('CRM deve seguir o padrão CRM/UF 123456.');
+      return;
+    }
+
+    const payload: Omit<Doctor, 'id'> = {
+      name: `${prefix} ${name.trim()}`,
+      specialty: specialty.trim(),
+      email: email.trim(),
+      phone: stripPhone(maskPhone(phone)),
+      availability: formatAvailability(availabilitySelection),
+      crm: crmValue,
+    };
+
+    setIsSaving(true);
+    try {
+      const saved = await doctorAPI.create(payload);
+      setDoctors((prev) => [...prev, saved]);
+      toast.success('Médico cadastrado.');
+      closeModal();
+    } catch (error) {
+      console.error('Erro ao salvar médico', error);
+      toast.error('Não foi possível cadastrar o médico.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const stepsTotal = 3;
+  const canProceedFromStep1 = () => {
+    setFormError(null);
+    if (!formValues.name.trim()) return (setFormError('Informe o nome.'), false);
+    if (!formValues.email.trim()) return (setFormError('Informe o email.'), false);
+    if (!formValues.phone.trim()) return (setFormError('Informe o telefone.'), false);
+    return true;
+  };
+  const canProceedFromStep2 = () => {
+    setFormError(null);
+    if (!formValues.specialty.trim()) return (setFormError('Informe a especialidade.'), false);
+    return true;
+  };
+  const nextStep = () => {
+    if (currentStep === 1 && !canProceedFromStep1()) return;
+    if (currentStep === 2 && !canProceedFromStep2()) return;
+    setCurrentStep((prev) => (Math.min(prev + 1, stepsTotal) as 1 | 2 | 3));
+  };
+  const prevStep = () => setCurrentStep((prev) => (Math.max(prev - 1, 1) as 1 | 2 | 3));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-serif">Médicos</h2>
+          <p className="text-sm text-gray-500">Cadastre os especialistas que atendem no Totem.</p>
+        </div>
+        <button
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-[#D3A67F] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#c99970] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D3A67F]"
+          onClick={openModal}
+        >
+          <Plus size={16} />
+          Adicionar médico
+        </button>
+      </div>
+
+      {/* Minimalist expandable cards (like Patients) */}
+      <div className="bg-white rounded-lg border border-gray-100">
+        <div className="p-3 space-y-2">
+          {loadingDoctors ? (
+            <div className="px-4 py-8 text-center text-gray-500">Carregando médicos...</div>
+          ) : doctors.length === 0 ? (
+            <div className="px-4 py-8 text-center text-gray-500">Nenhum médico cadastrado ainda.</div>
+          ) : (
+            doctors.map((doctor) => {
+              const isExpanded = expandedDoctorId === doctor.id;
+              return (
+                <div key={doctor.id} className="border rounded-lg bg-white shadow-sm overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedDoctorId(isExpanded ? null : doctor.id)}
+                    className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-full bg-[#D3A67F] flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                        {(doctor.name || 'M').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-medium text-gray-800 truncate block">
+                          {doctor.name}
+                        </span>
+                        <span className="text-xs text-[#D3A67F] truncate">{doctor.specialty}</span>
+                      </div>
+                    </div>
+                    {isExpanded ? (
+                      <ChevronUp size={18} className="text-gray-400 flex-shrink-0" />
+                    ) : (
+                      <ChevronDown size={18} className="text-gray-400 flex-shrink-0" />
+                    )}
+                  </button>
+                  {isExpanded && (
+                    <div className="px-3 pb-3 pt-0 border-t border-gray-100 bg-gray-50/50">
+                      <div className="space-y-2 text-xs text-gray-600 pt-3">
+                        <div className="flex items-center gap-2">
+                          <Mail size={12} className="text-gray-400" />
+                          <span className="truncate" title={doctor.email}>{doctor.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone size={12} className="text-gray-400" />
+                          <span>{maskPhone(doctor.phone)}</span>
+                        </div>
+                        <div>CRM: {doctor.crm}</div>
+                        <div>Disponibilidade: {doctor.availability || 'Seg a Sex'}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <Dialog open={isModalOpen} onOpenChange={(open) => !open && closeModal()}>
+          <DialogContent className="space-y-4 bg-white text-[#2F2F2F]">
+            <DialogHeader>
+              <DialogTitle>Novo Médico</DialogTitle>
+              <DialogDescription>Cadastre os dados em 3 etapas.</DialogDescription>
+              <div className="mt-2">
+                <div className="h-1 w-full bg-gray-200 rounded">
+                  <div
+                    className="h-1 bg-[#D3A67F] rounded transition-all"
+                    style={{ width: `${(currentStep / stepsTotal) * 100}%` }}
+                  />
+                </div>
+                <div className="mt-2 text-xs text-gray-500">Passo {currentStep} de {stepsTotal}</div>
+              </div>
+            </DialogHeader>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {currentStep === 1 && (
+                <div className="grid gap-4">
+                  <div className="space-y-1">
+                    <Label>Nome</Label>
+                    <div className="flex gap-2">
+                      <select
+                        value={prefix}
+                        onChange={(e) => setPrefix(e.target.value as 'Dr.' | 'Dra.')}
+                        className="rounded-md border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 focus:border-[#D3A67F] focus:ring-[#D3A67F]/50"
+                      >
+                        <option value="Dr.">Dr.</option>
+                        <option value="Dra.">Dra.</option>
+                      </select>
+                      <Input
+                        id="doctor-name"
+                        placeholder="Bruno Prado"
+                        value={formValues.name}
+                        onChange={(event) => handleChange('name', event.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="doctor-email">Email</Label>
+                    <Input
+                      id="doctor-email"
+                      type="email"
+                      placeholder="bruno.prado@lunavita.com"
+                      value={formValues.email}
+                      onChange={(event) => handleChange('email', event.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="doctor-phone">Telefone</Label>
+                    <Input
+                      id="doctor-phone"
+                      placeholder="(11) 98765-4321"
+                      value={formValues.phone}
+                      onChange={(event) => handleChange('phone', maskPhone(event.target.value))}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 2 && (
+                <div className="grid gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="doctor-specialty">Especialidade</Label>
+                    <Input
+                      id="doctor-specialty"
+                      placeholder="Dermatologia"
+                      value={formValues.specialty}
+                      onChange={(event) => handleChange('specialty', event.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Disponibilidade</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {availabilityOptions.map((day) => {
+                        const isSelected = availabilitySelection.includes(day);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              setAvailabilitySelection((prev) =>
+                                prev.includes(day) ? prev.filter((value) => value !== day) : [...prev, day]
+                              );
+                            }}
+                            className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                              isSelected
+                                ? 'border-[#D3A67F] bg-[#D3A67F] text-white'
+                                : 'border-gray-300 bg-white text-gray-600'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-400">Selecione os dias em que o médico atende.</p>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 3 && (
+                <div className="grid gap-4">
+                  <div className="space-y-1">
+                    <Label>CRM</Label>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="flex items-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-500">
+                        CRM/
+                      </span>
+                      <select
+                        id="doctor-crm-uf"
+                        value={formValues.crmUf}
+                        onChange={(event) => handleChange('crmUf', event.target.value)}
+                        className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-[#D3A67F] focus:outline-none"
+                        required
+                      >
+                        <option value="" disabled>
+                          UF
+                        </option>
+                        <option value="SP">SP</option>
+                        <option value="CE">CE</option>
+                      </select>
+                      <Input
+                        id="doctor-crm-number"
+                        placeholder="Digite o número"
+                        value={formValues.crmNumber}
+                        onChange={(event) =>
+                          handleChange('crmNumber', event.target.value.replace(/\D/g, ''))
+                        }
+                        onBlur={() => setCrmTouched(true)}
+                        className={`flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#D3A67F] focus:outline-none ${
+                          showCrmError
+                            ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/40'
+                            : ''
+                        }`}
+                        required
+                      />
+                    </div>
+                    {showCrmError && (
+                      <p className="text-xs text-red-600">CRM deve seguir CRM/UF 123456.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {formError && <p className="text-sm text-red-600">{formError}</p>}
+
+              <DialogFooter className="gap-3">
+                <div className="flex w-full items-center justify-between">
+                  <Button
+                    type="button"
+                    onClick={closeModal}
+                    className="rounded-full bg-white border border-gray-300 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    {currentStep > 1 && (
+                      <Button
+                        type="button"
+                        onClick={prevStep}
+                        className="rounded-full bg-white border border-gray-300 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        Voltar
+                      </Button>
+                    )}
+                    {currentStep < stepsTotal ? (
+                      <Button
+                        type="button"
+                        onClick={nextStep}
+                        className="rounded-full bg-[#D3A67F] px-6 py-2 text-sm font-semibold text-white hover:bg-[#c99970]"
+                      >
+                        Próximo
+                      </Button>
+                    ) : (
+                      <Button
+                        type="submit"
+                        className="rounded-full bg-[#D3A67F] px-6 py-2 text-sm font-semibold text-white hover:bg-[#c99970] disabled:opacity-60"
+                        disabled={isSaving}
+                      >
+                        {isSaving ? 'Salvando...' : 'Salvar médico'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+

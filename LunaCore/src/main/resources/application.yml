@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: lunacore
+  
+  datasource:
+    # Neon PostgreSQL (production): lunacore_db
+    # Local dev fallback: H2 in-memory
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:lunacore;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    # driver-class-name auto-detected by Spring Boot based on URL
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+        default_schema: lunacore
+    show-sql: true
+
+  h2:
+    console:
+      enabled: true
+
+  security:
+    user:
+      name: admin
+      password: admin
+
+jwt:
+  secret: ${JWT_SECRET:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9_ABCD1234efgh5678IJKL91011MNOP121314QRSTUV151617WXYZ181990}
+  expiration: 3600000   # 1 hora em milissegundos
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.luna.core: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

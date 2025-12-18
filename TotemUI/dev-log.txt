@@ -1,0 +1,20 @@
+
+> totem-ui-next@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+  - Experiments (use with caution):
+    · externalDir
+
+ ✓ Starting...
+ ✓ Ready in 2.2s
+ ○ Compiling / ...
+ ✓ Compiled / in 14s (708 modules)
+ ✓ Compiled in 1483ms (366 modules)
+ GET / 200 in 65ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1487ms (697 modules)
+ GET / 404 in 1950ms
+[?25h

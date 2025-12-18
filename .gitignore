@@ -1,0 +1,39 @@
+# Logs and runtime
+logs/
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Dependencies / build outputs
+node_modules/
+target/
+build/
+dist/
+.next/
+coverage/
+
+# IDE / tooling
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven wrapper / gradle caches
+.mvn/
+.gradle/
+
+# Uploads / generated media
+uploads/
+public/uploads/
+
+# Typescript build info
+*.tsbuildinfo

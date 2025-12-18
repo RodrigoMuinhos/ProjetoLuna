@@ -1,0 +1,32 @@
+[
+  {
+    "id": "a-1",
+    "patient": "Ana Moreira",
+    "patientId": "p-1",
+    "patientEmail": "ana@example.com",
+    "doctor": "Dr. Helena Prado",
+    "specialty": "Cardiologia",
+    "date": "2025-02-10",
+    "time": "09:30",
+    "status": "scheduled",
+    "type": "Consulta",
+    "paid": true,
+    "amount": 350,
+    "cpf": "12345678901"
+  },
+  {
+    "id": "a-2",
+    "patient": "Bruno Costa",
+    "patientId": "p-2",
+    "patientEmail": "bruno@example.com",
+    "doctor": "Dr. Marcelo Dias",
+    "specialty": "Ortopedia",
+    "date": "2025-01-25",
+    "time": "15:00",
+    "status": "scheduled",
+    "type": "Consulta",
+    "paid": false,
+    "amount": 280,
+    "cpf": "98765432100"
+  }
+]

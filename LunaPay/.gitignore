@@ -1,0 +1,65 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Maven Wrapper ###
+.mvn/
+mvnw
+mvnw.cmd
+
+### Logs ###
+logs/
+*.log
+
+### Database ###
+database/
+*.db
+*.h2.db
+
+### Environment ###
+.env
+.env.local
+.env.*.local
+
+### Docker ###
+docker-compose.override.yml
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Documentation (temporary files) ###
+TENANT_FLOW_ANALYSIS.md
+IMPLEMENTATION_SUMMARY.md
+TODO_INTEGRATION.md
+TOTEM_INTEGRATION_GUIDE.md

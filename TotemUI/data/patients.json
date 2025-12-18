@@ -1,0 +1,32 @@
+[
+  {
+    "id": "p-1",
+    "name": "Ana Moreira",
+    "cpf": "12345678901",
+    "phone": "11999990000",
+    "email": "ana@example.com",
+    "birthDate": "1990-05-18",
+    "address": "Rua das Flores, 123 - São Paulo",
+    "healthPlan": "Particular",
+    "notes": "Alergia a penicilina.",
+    "lastVisit": "2025-01-15",
+    "nextAppointment": "2025-02-10",
+    "createdAt": "2025-01-10T12:00:00.000Z",
+    "updatedAt": "2025-01-15T09:30:00.000Z"
+  },
+  {
+    "id": "p-2",
+    "name": "Bruno Costa",
+    "cpf": "98765432100",
+    "phone": "21988887777",
+    "email": "bruno@example.com",
+    "birthDate": "1985-11-02",
+    "address": "Av. Atlântica, 500 - Rio de Janeiro",
+    "healthPlan": "Bradesco Saúde",
+    "notes": "",
+    "lastVisit": "2024-12-20",
+    "nextAppointment": "2025-01-25",
+    "createdAt": "2024-12-15T10:00:00.000Z",
+    "updatedAt": "2024-12-20T15:45:00.000Z"
+  }
+]

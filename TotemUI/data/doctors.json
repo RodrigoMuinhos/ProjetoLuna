@@ -1,0 +1,20 @@
+[
+  {
+    "id": "d-1",
+    "name": "Dr. Helena Prado",
+    "specialty": "Cardiologia",
+    "email": "helena@lunavita.com",
+    "phone": "11988887777",
+    "availability": "Seg a Sex · 08h às 12h",
+    "crm": "123456-SP"
+  },
+  {
+    "id": "d-2",
+    "name": "Dr. Marcelo Dias",
+    "specialty": "Ortopedia",
+    "email": "marcelo@lunavita.com",
+    "phone": "11991112222",
+    "availability": "Seg, Qua, Sex · 14h às 18h",
+    "crm": "654321-SP"
+  }
+]
