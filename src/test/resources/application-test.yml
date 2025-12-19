@@ -4,9 +4,10 @@ spring:
     name: lunacore-test
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/lunacore_test
-    username: lunacore
-    password: secret
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
   
   jpa:
     hibernate:
@@ -14,7 +15,12 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
     show-sql: false
+  
+  h2:
+    console:
+      enabled: false
 
 jwt:
   secret: test-secret-key-for-testing-purposes-minimum-256-bits-required
