@@ -72,7 +72,7 @@ services:
       - SERVER_PORT=8081
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_DATASOURCE_URL=${NEON_TOTEMAPI_URL}
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
       - LUNACORE_URL=${LUNACORE_URL}
     ports:
       - "8081:8081"
