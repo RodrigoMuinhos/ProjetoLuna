@@ -1,0 +1,20 @@
+# Build artifacts
+target/
+*.jar
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven wrapper (Railway will build)
+.mvn/wrapper/maven-wrapper.jar

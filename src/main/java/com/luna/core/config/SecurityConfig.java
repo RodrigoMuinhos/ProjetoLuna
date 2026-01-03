@@ -82,11 +82,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Configuração global de CORS para liberar o frontend (localhost:3000)
+    // Configuração global de CORS para liberar o frontend
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(java.util.List.of("http://localhost:3000"));
+        config.setAllowedOriginPatterns(java.util.List.of(
+            "http://localhost:3000",
+            "https://projeto-luna.vercel.app",
+            "https://*.vercel.app"
+        ));
         config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Origin", "Accept", "X-Requested-With"));
         config.setAllowCredentials(true);
