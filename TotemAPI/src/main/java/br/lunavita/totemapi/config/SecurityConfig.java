@@ -1,4 +1,4 @@
-package br.lunavita.totemapi.config;
+﻿package br.lunavita.totemapi.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,11 +49,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF for stateless API
                 .csrf(csrf -> csrf.disable())
-                // Configure CORS first
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // Exception handling
                 .exceptionHandling(ex -> {
                     ex.authenticationEntryPoint((request, response, authException) -> {
                         System.out.println("[SECURITY] Unauthorized access to: " + request.getRequestURI() + " - "
@@ -63,22 +60,43 @@ public class SecurityConfig {
                         response.getWriter().write("{\"error\": \"Unauthorized - Token from LunaCore required\"}");
                     });
                 })
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // Allow all OPTIONS requests (CORS preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        
                         // Public health/actuator
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
+                        
                         // Webhooks (Resend email notifications, etc)
                         .requestMatchers("/api/webhooks/**").permitAll()
+                        
                         // Payment endpoints (returns 410 Gone - deprecated)
                         .requestMatchers("/api/payments/**").permitAll()
+                        
+                        // ===== PUBLIC TOTEM ENDPOINTS (no auth required) =====
+                        // Check-in by CPF (public totem kiosk)
+                        .requestMatchers(HttpMethod.GET, "/api/patients/cpf/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/patient/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/upcoming").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/appointments/*/checkin").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/appointments/*/status").permitAll()
+                        
+                        // Dashboard summary (public, sanitized data)
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard/summary").permitAll()
+                        
+                        // Doctors list (for appointment display)
+                        .requestMatchers(HttpMethod.GET, "/api/doctors").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/doctors/**").permitAll()
+                        
+                        // Videos for waiting room
+                        .requestMatchers(HttpMethod.GET, "/api/videos/**").permitAll()
+                        
+                        // ===== AUTHENTICATED ENDPOINTS (admin panel) =====
                         // All other endpoints require authentication (JWT from LunaCore)
                         .anyRequest().authenticated())
-                // Add JWT filter before username/password filter
+                        
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                // Stateless session management
                 .sessionManagement(sm -> sm.sessionCreationPolicy(
                         org.springframework.security.config.http.SessionCreationPolicy.STATELESS));
 
